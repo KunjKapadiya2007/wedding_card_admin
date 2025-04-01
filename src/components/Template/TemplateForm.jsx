@@ -21,6 +21,9 @@ import {
 import { Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import axios from 'axios';
+import axiosInstance from "../../Instance.jsx";
+import {useNavigate, useParams} from "react-router-dom";
+import template from "./Template.jsx";
 
 // Color dictionary for auto-completion
 const colorDictionary = {
@@ -57,7 +60,7 @@ const TemplateForm = () => {
         name: '',
         desc: '',
         tags: [],
-        colors: [{ color: '', hex: '#000000', productImages: [] }],
+        colors: [{ color: '', hex: '#000000', templateImages: [] }],
         size: '',
         templateType: '',
         templateTheme: '',
@@ -72,6 +75,55 @@ const TemplateForm = () => {
     const [imagePreviews, setImagePreviews] = useState([]);
     const [errors, setErrors] = useState({});
     const fileInputRefs = useRef([]);
+    const [types, setTypes] = useState([]);
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const [isEditing, setIsEditing] = useState(false);
+
+    useEffect(() => {
+        // Fetch types
+        axiosInstance.get("/api/all/type")
+            .then((response) => {
+                setTypes(response.data.data);
+            })
+            .catch((error) => {
+                console.error("Error fetching types:", error);
+            });
+
+        // If ID exists, fetch template data for editing
+        if (id) {
+            setIsEditing(true);
+            axiosInstance.get(`/api/template/${id}`)
+                .then((response) => {
+                    const template = response.data.data;
+                    setFormData({
+                        ...template,
+                        colors: template.colors || [{ color: '', hex: '#000000', templateImages: [] }],
+                        type: template.type._id,
+                    });
+
+                    // Set image previews if needed
+                    if (template.colors && template.colors.length > 0) {
+                        const previews = template.colors.map(color => {
+                            const images = typeof color.templateImages === "string" ? [color.templateImages] : color.templateImages || [];
+
+                            return images.map(img => ({
+                                url: img,
+                                name: img.split('/').pop(),
+                                file: null
+                            }));
+                        });
+                        console.log(previews,"5641557375adasdsdad");
+
+                        setImagePreviews(previews); // Now imagePreviews[index] will work correctly
+                    }
+
+                })
+                .catch((error) => {
+                    console.error("Error fetching template:", error);
+                });
+        }
+    }, [id]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -79,6 +131,10 @@ const TemplateForm = () => {
             ...prev,
             [name]: type === 'checkbox' ? checked : value
         }));
+    };
+
+    const handleTypeChange = (event) => {
+        setFormData({ ...formData, type: event.target.value });
     };
 
     const handleColorNameChange = (index, e) => {
@@ -114,7 +170,7 @@ const TemplateForm = () => {
     const handleAddColor = () => {
         setFormData(prev => ({
             ...prev,
-            colors: [...prev.colors, { color: '', hex: '#000000', productImages: [] }]
+            colors: [...prev.colors, { color: '', hex: '#000000', templateImages: [] }]
         }));
     };
 
@@ -161,8 +217,8 @@ const TemplateForm = () => {
 
         updatedColors[colorIndex] = {
             ...updatedColors[colorIndex],
-            productImages: [
-                ...updatedColors[colorIndex].productImages,
+            templateImages: [
+                ...updatedColors[colorIndex].templateImages,
                 ...newPreviews.map(p => p.name)
             ]
         };
@@ -181,19 +237,27 @@ const TemplateForm = () => {
     };
 
     const handleRemoveImage = (colorIndex, imageIndex) => {
-        const updatedColors = [...formData.colors];
-        const updatedPreviews = [...imagePreviews];
+        const updatedColors = formData.colors.map((color, idx) =>
+            idx === colorIndex
+                ? { ...color, templateImages: [...color.templateImages.slice(0, imageIndex), ...color.templateImages.slice(imageIndex + 1)] }
+                : color
+        );
 
-        // Remove the image URL
-        URL.revokeObjectURL(updatedPreviews[colorIndex][imageIndex].url);
+        const updatedPreviews = imagePreviews.map((previews, idx) =>
+            idx === colorIndex
+                ? previews.filter((_, i) => i !== imageIndex)
+                : previews
+        );
 
-        // Remove the image from both arrays
-        updatedColors[colorIndex].productImages.splice(imageIndex, 1);
-        updatedPreviews[colorIndex].splice(imageIndex, 1);
+        // Revoke the object URL if it's a blob
+        if (imagePreviews[colorIndex]?.[imageIndex]?.url?.startsWith('blob:')) {
+            URL.revokeObjectURL(imagePreviews[colorIndex][imageIndex].url);
+        }
 
         setFormData(prev => ({ ...prev, colors: updatedColors }));
         setImagePreviews(updatedPreviews);
     };
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -203,7 +267,7 @@ const TemplateForm = () => {
         if (!formData.type) newErrors.type = 'Type is required';
         if (!formData.name) newErrors.name = 'Name is required';
         if (!formData.desc) newErrors.desc = 'Description is required';
-        if (formData.colors.some(c => !c.color || c.productImages.length === 0)) {
+        if (formData.colors.some(c => !c.color || c.templateImages.length === 0)) {
             newErrors.colors = 'All colors must have a name and at least one image';
         }
 
@@ -213,14 +277,15 @@ const TemplateForm = () => {
         }
 
         try {
-            // Prepare FormData for file uploads
             const formDataToSend = new FormData();
 
             // Add all form fields
             formDataToSend.append('type', formData.type);
             formDataToSend.append('name', formData.name);
             formDataToSend.append('desc', formData.desc);
-            formDataToSend.append('tags', JSON.stringify(formData.tags));
+            formData.tags.forEach((tag, tagIndex) => {
+                formDataToSend.append(`tags[${tagIndex}]` , tag);
+            });
             formDataToSend.append('size', formData.size);
             formDataToSend.append('templateType', formData.templateType);
             formDataToSend.append('templateTheme', formData.templateTheme);
@@ -230,66 +295,82 @@ const TemplateForm = () => {
             formDataToSend.append('isFavorite', formData.isFavorite);
             formDataToSend.append('isPremium', formData.isPremium);
 
-            // Add colors data
             formDataToSend.append('colors', JSON.stringify(formData.colors.map(color => ({
                 color: color.color,
                 hex: color.hex,
-                productImages: color.productImages
+                templateImages: isEditing ? [] : color.templateImages,
             }))));
 
-            // Add all image files
             imagePreviews.forEach((colorPreviews, colorIndex) => {
                 colorPreviews?.forEach((preview, imgIndex) => {
-                    formDataToSend.append(`images-${colorIndex}-${imgIndex}`, preview.file);
+                    if (preview.file) {
+                        formDataToSend.append(`templateImages[${colorIndex}]`, preview.file);
+                    }
                 });
             });
 
-            const response = await axios.post('/api/templates', formDataToSend, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
+            let response;
+            if (isEditing) {
+                response = await axiosInstance.put(`/api/template/${id}`, formDataToSend, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+            } else {
+                response = await axiosInstance.post('/api/template', formDataToSend, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+            }
 
-            console.log('Template created:', response.data);
-            // Reset form or redirect
+            console.log('Template saved:', response.data);
+            navigate("/template");
         } catch (error) {
-            console.error('Error creating template:', error);
+            console.error('Error saving template:', error);
         }
     };
 
-    // Clean up object URLs when component unmounts
+
     useEffect(() => {
         return () => {
             imagePreviews.forEach(colorPreviews => {
                 colorPreviews?.forEach(preview => {
-                    URL.revokeObjectURL(preview.url);
+                    if (preview.url.startsWith('blob:')) {
+                        URL.revokeObjectURL(preview.url);
+                    }
                 });
             });
         };
-    }, []);
+    }, [imagePreviews]);
 
     return (
         <Box p={2} mt={5}>
             <Container>
                 <Typography variant="h4" gutterBottom sx={{ mb: 4 }}>
-                    Create New Template
+                    {isEditing ? 'Edit Template' : 'Create New Template'}
                 </Typography>
 
                 <form onSubmit={handleSubmit}>
                     <Grid container spacing={3}>
-                        {/* Basic Information */}
                         <Grid item xs={12}>
                             <FormControl fullWidth error={!!errors.type}>
                                 <InputLabel>Type</InputLabel>
                                 <Select
                                     name="type"
                                     value={formData.type}
-                                    onChange={handleChange}
+                                    onChange={handleTypeChange}
                                     label="Type"
                                 >
-                                    <MenuItem value="invitation">Invitation</MenuItem>
-                                    <MenuItem value="card">Card</MenuItem>
-                                    <MenuItem value="poster">Poster</MenuItem>
+                                    {types.length > 0 ? (
+                                        types.map((type) => (
+                                            <MenuItem key={type._id} value={type._id}>
+                                                {type.name}
+                                            </MenuItem>
+                                        ))
+                                    ) : (
+                                        <MenuItem disabled>No types available</MenuItem>
+                                    )}
                                 </Select>
                                 {errors.type && <FormHelperText>{errors.type}</FormHelperText>}
                             </FormControl>
@@ -545,7 +626,7 @@ const TemplateForm = () => {
                                         {/* Image Previews */}
                                         <Grid item xs={12}>
                                             <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                                                Uploaded Images ({color.productImages.length})
+                                                Uploaded Images ({color.templateImages.length})
                                             </Typography>
                                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                                                 {(imagePreviews[index] || []).map((preview, imgIndex) => (
@@ -629,7 +710,7 @@ const TemplateForm = () => {
                                     },
                                 }}
                             >
-                                Create Template
+                                {isEditing ? 'Update Template' : 'Create Template'}
                             </Button>
                         </Grid>
                     </Grid>

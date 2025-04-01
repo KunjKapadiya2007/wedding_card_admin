@@ -97,6 +97,7 @@ const App = ({ isLoggedIn, onLogout }) => {
                     <Route path="/order" element={<Order />} />
                     <Route path="/inquiry" element={<Inquiry />} />
                     <Route path="/template-form" element={<TemplateForm />} />
+                    <Route path="/template-form/:id" element={<TemplateForm />} />
                     <Route path="/template" element={<Template />} />
                     <Route path="/blog" element={<Blog />} />
                     <Route path="/user" element={<Users />} />

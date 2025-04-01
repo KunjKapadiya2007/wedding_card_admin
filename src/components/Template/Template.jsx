@@ -1,42 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from "../../Instance.jsx";
 import {
-    Box,
-    Typography,
-    Grid,
-    Card,
-    CardContent,
-    CardMedia,
-    Chip,
-    CircularProgress,
-    Alert,
-    Avatar,
-    Divider,
-    IconButton,
-    Tooltip,
-    Button
+    Box, Typography, Grid, Card, CardContent, CardMedia, Chip, CircularProgress, Alert,
+    Divider, IconButton, Tooltip, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions
 } from '@mui/material';
-import {
-    Palette,
-    PhotoSizeSelectActual,
-    AspectRatio,
-    Star,
-    StarBorder,
-    Info
-} from '@mui/icons-material';
+import {PhotoSizeSelectActual, AspectRatio, Star, StarBorder, Edit, Delete} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
 const Template = () => {
     const [templates, setTemplates] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [selectedImages, setSelectedImages] = useState({});
+    const [selectedColors, setSelectedColors] = useState({}); // Track selected color for each template
+    const [deleteDialog, setDeleteDialog] = useState({ open: false, templateId: null });
     const navigate = useNavigate();
 
     useEffect(() => {
         const fetchTemplates = async () => {
             try {
-                const response = await axios.get('https://wedding-card-be.onrender.com/api/template');
+                const response = await axiosInstance.get('/api/template');
                 setTemplates(response.data.data);
+
+                const initialImages = {};
+                const initialColors = {};
+
+                response.data.data.forEach(template => {
+                    if (template.colors?.length > 0) {
+                        initialImages[template._id] = template.colors[0].templateImages;
+                        initialColors[template._id] = template.colors[0].hex;
+                    }
+                });
+
+                setSelectedImages(initialImages);
+                setSelectedColors(initialColors);
             } catch (err) {
                 setError(err.message || 'Failed to fetch templates');
             } finally {
@@ -46,6 +43,36 @@ const Template = () => {
 
         fetchTemplates();
     }, []);
+
+    const handleColorClick = (templateId, newImage, colorHex) => {
+        setSelectedImages(prev => ({
+            ...prev,
+            [templateId]: newImage
+        }));
+        setSelectedColors(prev => ({
+            ...prev,
+            [templateId]: colorHex
+        }));
+    };
+
+    const handleDeleteConfirm = async () => {
+        const { templateId } = deleteDialog;
+        if (!templateId) return;
+
+        try {
+            await axiosInstance.delete(`/api/template/${templateId}`);
+            setTemplates(prev => prev.filter(template => template._id !== templateId));
+            toast.success("Template deleted successfully");
+        } catch (err) {
+            toast.error("Failed to delete template");
+        } finally {
+            setDeleteDialog({ open: false, templateId: null });
+        }
+    };
+
+    const handleEdit = (_id) => {
+        navigate(`/template-form/${_id}`);
+    };
 
     if (loading) {
         return (
@@ -71,7 +98,6 @@ const Template = () => {
             <Box sx={{ display: "flex", justifyContent: "end" }}>
                 <Button
                     sx={{
-                        // width: "100%",
                         mb: "20px",
                         textTransform: "unset",
                         border: "1px solid black",
@@ -81,10 +107,7 @@ const Template = () => {
                         borderRadius: "0px",
                         backgroundColor: '#000',
                         color: '#fff',
-                        "&:hover": {
-                            backgroundColor: '#fff',
-                            color: '#000',
-                        },
+                        "&:hover": { backgroundColor: '#fff', color: '#000' },
                     }}
                     onClick={() => navigate("/template-form")}
                 >
@@ -94,15 +117,26 @@ const Template = () => {
 
             <Grid container spacing={3}>
                 {templates.map((template) => (
-                    <Grid item xs={12} sm={6} md={4} key={template._id}>
-                        <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                            {/* Template Preview Images (using first color variant) */}
-                            {template.colors?.[0]?.templateImages?.[0] && (
+                    <Grid item xs={12} sm={6} lg={4} key={template._id}>
+                        <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                            <Box sx={{ position: "absolute", top: 8, right: 8 }}>
+                                <Tooltip title="Edit">
+                                    <IconButton size="small" sx={{ color: "blue" }}>
+                                        <Edit fontSize="small" onClick={() => handleEdit(template._id)}/>
+                                    </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Delete">
+                                    <IconButton size="small" sx={{ color: "red" }} onClick={() => setDeleteDialog({ open: true, templateId: template._id })}>
+                                        <Delete fontSize="small" />
+                                    </IconButton>
+                                </Tooltip>
+                            </Box>
+                            {selectedImages[template._id] && (
                                 <CardMedia
                                     component="img"
-                                    height="200"
-                                    image={template.colors[0].templateImages[0]}
+                                    image={selectedImages[template._id]}
                                     alt={template.name}
+                                    style={{ width: '100%', height: "300px", objectFit: "contain" }}
                                 />
                             )}
 
@@ -111,9 +145,7 @@ const Template = () => {
                                     <Typography variant="h6" component="div">
                                         {template.name.replace(/"/g, '')}
                                     </Typography>
-                                    {template.isPremium && (
-                                        <Chip label="Premium" color="primary" size="small" />
-                                    )}
+                                    {template.isPremium && <Chip label="Premium" color="primary" size="small" />}
                                 </Box>
 
                                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
@@ -122,17 +154,26 @@ const Template = () => {
 
                                 <Divider sx={{ my: 2 }} />
 
-                                {/* Template Details */}
                                 <Grid container spacing={1} sx={{ mt: 1 }}>
                                     <Grid item xs={6}>
-                                        <Tooltip title="Color Variants">
-                                            <Chip
-                                                icon={<Palette fontSize="small" />}
-                                                label={`${template.colors.length} colors`}
-                                                variant="outlined"
-                                                size="small"
+                                        {template.colors?.map((color, index) => (
+                                            <Box
+                                                key={index}
+                                                onClick={() => handleColorClick(template._id, color.templateImages, color.hex)}
+                                                sx={{
+                                                    p: 1.2,
+                                                    display: "inline-block",
+                                                    border: "1px solid #000",
+                                                    borderRadius: "50%",
+                                                    backgroundColor: color.hex,
+                                                    marginRight: 1,
+                                                    cursor: "pointer",
+                                                    transition: "transform 0.2s",
+                                                    transform: selectedColors[template._id] === color.hex ? "scale(1.2)" : "scale(1)",
+                                                    "&:hover": { transform: "scale(1.1)" }
+                                                }}
                                             />
-                                        </Tooltip>
+                                        ))}
                                     </Grid>
                                     <Grid item xs={6}>
                                         <Tooltip title="Size">
@@ -165,12 +206,34 @@ const Template = () => {
                                             </IconButton>
                                         </Tooltip>
                                     </Grid>
+                                    <Grid item xs={6}>
+                                        <Typography><strong>Type</strong>: {template.type?.name}</Typography>
+                                    </Grid>
+                                    <Grid item xs={6}>
+                                        <Typography><strong>Template Type</strong>: {template.templateType}</Typography>
+                                    </Grid>
+                                    <Grid item xs={6}>
+                                        <Typography><strong>Template Theme</strong>: {template.templateTheme}</Typography>
+                                    </Grid>
+                                    <Grid item xs={6}>
+                                        <Typography><strong>Tags</strong>: {template.tags?.join(", ")}</Typography>
+                                    </Grid>
                                 </Grid>
                             </CardContent>
                         </Card>
                     </Grid>
                 ))}
             </Grid>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteDialog.open} onClose={() => setDeleteDialog({ open: false, templateId: null })}>
+                <DialogTitle>Confirm Deletion</DialogTitle>
+                <DialogContent><DialogContentText>Are you sure you want to delete this template?</DialogContentText></DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteDialog({ open: false, templateId: null })} color="primary">Cancel</Button>
+                    <Button onClick={handleDeleteConfirm} color="error">Delete</Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };
