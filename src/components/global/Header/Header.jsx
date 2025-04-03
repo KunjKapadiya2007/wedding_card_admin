@@ -57,6 +57,10 @@ const Header = ({ open }) => {
             label: "Users",
             to: "/user",
         },
+        {
+            label: "Config",
+            to: "/config",
+        },
     ];
 
     // { text: "Add Product", icon: <MailIcon />, path: "/add-product" },

@@ -44,6 +44,7 @@ const Sidebar = ({
     { text: "Inquiry", icon: <MessageIcon />, path: "/inquiry" },
     { text: "Blog", icon: <MessageIcon />, path: "/blog" },
     { text: "Users", icon: <Person4Icon />, path: "/user" },
+    { text: "Config", icon: <Person4Icon />, path: "/config" },
   ];
 
   const handleSubmenuClick = (text) => {

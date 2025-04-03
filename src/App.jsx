@@ -17,6 +17,7 @@ import Inquiry from "./components/UserInquiry/inquiry";
 import TemplateForm from "./components/Template/TemplateForm";
 import Blog from "./components/Blog/Blog";
 import Template from "./components/Template/Template";
+import Config from "./config/config.jsx";
 
 const drawerWidth = 250;
 
@@ -101,6 +102,7 @@ const App = ({ isLoggedIn, onLogout }) => {
                     <Route path="/template" element={<Template />} />
                     <Route path="/blog" element={<Blog />} />
                     <Route path="/user" element={<Users />} />
+                    <Route path="/config" element={<Config />} />
                 </Routes>
             </Main>
         </Box>
