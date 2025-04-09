@@ -26,6 +26,10 @@ const Header = ({ open }) => {
     };
     const menuItems = [
         {
+            label: "Editor",
+            to: "/editor",
+        },
+        {
             label: "Template",
             to: "/template",
         },

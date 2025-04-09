@@ -5,6 +5,8 @@ import App from "./App";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import Login from "./pages/Login";
 import PrivateRoute from "./privateRoute";
+import PolotnoEditorProvider from "./pages/editor/PolotnoEditorProvider";
+import { FiberProvider } from "its-fine";
 
 const Root = () => {
     const isLoggedIn = !!localStorage.getItem("token");
@@ -18,8 +20,13 @@ const Root = () => {
     return (
         <Routes>
             <Route path="/login" element={<Login />} />
-            <Route element={<PrivateRoute/>}>
-                <Route path="/*" element={<App onLogout={handleLogout} isLoggedIn={isLoggedIn} />} />
+            <Route element={<PrivateRoute />}>
+                <Route path="/*" element={
+                    <>
+                        <App onLogout={handleLogout} isLoggedIn={isLoggedIn} />
+                        <PolotnoEditorProvider />
+                    </>
+                } />
             </Route>
         </Routes>
     );
@@ -28,6 +35,8 @@ const Root = () => {
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
     <BrowserRouter>
-        <Root />
+        <FiberProvider>
+            <Root />
+        </FiberProvider>
     </BrowserRouter>
 );

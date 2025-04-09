@@ -36,6 +36,7 @@ const Sidebar = ({
   const navigate = useNavigate()
 
   const menuItems = [
+    { text: "Editor", icon: <AddIcon />, path: "/editor" },
     { text: "Template", icon: <AddIcon />, path: "/template" },
     { text: "Parent Category", icon: <FilterListIcon />, path: "/parent-category" },
     { text: "Category", icon: <CategoryIcon />, path: "/category" },
