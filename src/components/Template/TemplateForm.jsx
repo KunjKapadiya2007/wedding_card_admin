@@ -20,10 +20,8 @@ import {
 } from '@mui/material';
 import { Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import axios from 'axios';
 import axiosInstance from "../../Instance.jsx";
 import {useNavigate, useParams} from "react-router-dom";
-import template from "./Template.jsx";
 
 // Color dictionary for auto-completion
 const colorDictionary = {
