@@ -1,11 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, {useEffect, useState} from 'react';
 import axiosInstance from "../../Instance.jsx";
 import {
-    Box, Typography, Grid, Card, CardContent, CardMedia, Chip, CircularProgress, Alert,
-    Divider, IconButton, Tooltip, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions
+    Alert,
+    Box,
+    Button,
+    Card,
+    CardContent,
+    CardMedia,
+    Chip,
+    CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+    Divider,
+    Grid,
+    IconButton,
+    Tooltip,
+    Typography
 } from '@mui/material';
-import {PhotoSizeSelectActual, AspectRatio, Star, StarBorder, Edit, Delete} from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import {AspectRatio, Delete, Edit, PhotoSizeSelectActual, Star, StarBorder} from '@mui/icons-material';
+import {useNavigate} from 'react-router-dom';
 
 const Template = () => {
     const [templates, setTemplates] = useState([]);
@@ -114,7 +130,6 @@ const Template = () => {
                     Add Template
                 </Button>
             </Box>
-
             <Grid container spacing={3}>
                 {templates.map((template) => (
                     <Grid item xs={12} sm={6} lg={4} key={template._id}>
@@ -139,7 +154,6 @@ const Template = () => {
                                     style={{ width: '100%', height: "300px", objectFit: "contain" }}
                                 />
                             )}
-
                             <CardContent sx={{ flexGrow: 1 }}>
                                 <Box display="flex" justifyContent="space-between" alignItems="center">
                                     <Typography variant="h6" component="div">
@@ -147,13 +161,10 @@ const Template = () => {
                                     </Typography>
                                     {template.isPremium && <Chip label="Premium" color="primary" size="small" />}
                                 </Box>
-
                                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                                     {template.desc.replace(/"/g, '')}
                                 </Typography>
-
                                 <Divider sx={{ my: 2 }} />
-
                                 <Grid container spacing={1} sx={{ mt: 1 }}>
                                     <Grid item xs={6}>
                                         {template.colors?.map((color, index) => (
@@ -224,8 +235,6 @@ const Template = () => {
                     </Grid>
                 ))}
             </Grid>
-
-            {/* Delete Confirmation Dialog */}
             <Dialog open={deleteDialog.open} onClose={() => setDeleteDialog({ open: false, templateId: null })}>
                 <DialogTitle>Confirm Deletion</DialogTitle>
                 <DialogContent><DialogContentText>Are you sure you want to delete this template?</DialogContentText></DialogContent>

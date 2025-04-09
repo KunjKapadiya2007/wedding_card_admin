@@ -1,27 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import {
-    Box,
-    Button,
-    Checkbox,
-    FormControl,
-    FormControlLabel,
-    FormHelperText,
-    Grid,
-    InputLabel,
-    MenuItem,
-    Select,
-    TextField,
-    Typography,
-    Paper,
-    Chip,
-    IconButton,
-    Avatar,
-    Container
-} from '@mui/material';
+import { Box, Button, Checkbox, FormControl, FormControlLabel, FormHelperText, Grid, InputLabel, MenuItem, Select, TextField, Typography, Paper, Chip, IconButton, Avatar, Container } from '@mui/material';
 import { Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import axiosInstance from "../../Instance.jsx";
-import {useNavigate, useParams} from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { useEditorData } from '../../pages/editor/EditorDataContext.jsx';
 
 // Color dictionary for auto-completion
 const colorDictionary = {
@@ -47,7 +30,6 @@ const colorDictionary = {
     'gold': '#FFD700'
 };
 
-// Create reverse mapping (hex to name)
 const hexToColorName = Object.fromEntries(
     Object.entries(colorDictionary).map(([name, hex]) => [hex.toLowerCase(), name])
 );
@@ -58,28 +40,37 @@ const TemplateForm = () => {
         name: '',
         desc: '',
         tags: [],
-        colors: [{ color: '', hex: '#000000', templateImages: [] }],
+        colors: [
+            {
+                color: '',
+                hex: '',
+                templateImages: '',
+                initialDetail: {},
+            },
+        ],
         size: '',
         templateType: '',
         templateTheme: '',
-        orientation: 'portrait',
+        orientation: '',
         count: 0,
         templatePhoto: false,
         isFavorite: false,
-        isPremium: false
-    });
+        isPremium: false,
 
+    });
     const [tagInput, setTagInput] = useState('');
     const [imagePreviews, setImagePreviews] = useState([]);
     const [errors, setErrors] = useState({});
     const fileInputRefs = useRef([]);
     const [types, setTypes] = useState([]);
+    const [dataUrl, setDataUrl] = useState('');
     const { id } = useParams();
     const navigate = useNavigate();
     const [isEditing, setIsEditing] = useState(false);
+    const { editorData, templetImage } = useEditorData();
 
     useEffect(() => {
-        // Fetch types
+
         axiosInstance.get("/api/all/type")
             .then((response) => {
                 setTypes(response.data.data);
@@ -88,34 +79,34 @@ const TemplateForm = () => {
                 console.error("Error fetching types:", error);
             });
 
-        // If ID exists, fetch template data for editing
         if (id) {
             setIsEditing(true);
             axiosInstance.get(`/api/template/${id}`)
                 .then((response) => {
                     const template = response.data.data;
+
+                    const updatedColors = template.colors.map(color => ({
+                        color: color.color || '',
+                        hex: color.hex || '#000000',
+                        templateImages: Array.isArray(color.templateImages) ? color.templateImages : [],
+                        initialDetail: color.initialDetail || {}
+                    }));
+
                     setFormData({
                         ...template,
-                        colors: template.colors || [{ color: '', hex: '#000000', templateImages: [] }],
+                        colors: updatedColors,
                         type: template.type._id,
                     });
 
-                    // Set image previews if needed
-                    if (template.colors && template.colors.length > 0) {
-                        const previews = template.colors.map(color => {
-                            const images = typeof color.templateImages === "string" ? [color.templateImages] : color.templateImages || [];
+                    const previews = updatedColors.map(color => {
+                        return color.templateImages.map(img => ({
+                            url: img,
+                            name: img.split('/').pop(),
+                            file: null
+                        }));
+                    });
 
-                            return images.map(img => ({
-                                url: img,
-                                name: img.split('/').pop(),
-                                file: null
-                            }));
-                        });
-                        console.log(previews,"5641557375adasdsdad");
-
-                        setImagePreviews(previews); // Now imagePreviews[index] will work correctly
-                    }
-
+                    setImagePreviews(previews);
                 })
                 .catch((error) => {
                     console.error("Error fetching template:", error);
@@ -139,10 +130,8 @@ const TemplateForm = () => {
         const { value } = e.target;
         const updatedColors = [...formData.colors];
 
-        // Update color name
         updatedColors[index].color = value;
 
-        // If the color exists in our dictionary, auto-fill the hex
         if (colorDictionary[value.toLowerCase()]) {
             updatedColors[index].hex = colorDictionary[value.toLowerCase()];
         }
@@ -154,10 +143,8 @@ const TemplateForm = () => {
         const { value } = e.target;
         const updatedColors = [...formData.colors];
 
-        // Update hex value
         updatedColors[index].hex = value;
 
-        // If the hex exists in our reverse mapping, auto-fill the color name
         if (hexToColorName[value.toLowerCase()]) {
             updatedColors[index].color = hexToColorName[value.toLowerCase()];
         }
@@ -168,7 +155,7 @@ const TemplateForm = () => {
     const handleAddColor = () => {
         setFormData(prev => ({
             ...prev,
-            colors: [...prev.colors, { color: '', hex: '#000000', templateImages: [] }]
+            colors: [...prev.colors, { color: '', hex: '#000000', templateImages: [], initialDetail: {} }]
         }));
     };
 
@@ -176,7 +163,6 @@ const TemplateForm = () => {
         const updatedColors = formData.colors.filter((_, i) => i !== index);
         setFormData(prev => ({ ...prev, colors: updatedColors }));
 
-        // Clean up image previews for removed color
         const updatedPreviews = [...imagePreviews];
         updatedPreviews.splice(index, 1);
         setImagePreviews(updatedPreviews);
@@ -199,75 +185,12 @@ const TemplateForm = () => {
         }));
     };
 
-    const handleImageUpload = (colorIndex, e) => {
-        const files = Array.from(e.target.files);
-        if (files.length === 0) return;
-
-        const updatedColors = [...formData.colors];
-        const updatedPreviews = [...imagePreviews];
-
-        // Create file URLs for preview
-        const newPreviews = files.map(file => ({
-            url: URL.createObjectURL(file),
-            name: file.name,
-            file // Store the actual file for upload
-        }));
-
-        updatedColors[colorIndex] = {
-            ...updatedColors[colorIndex],
-            templateImages: [
-                ...updatedColors[colorIndex].templateImages,
-                ...newPreviews.map(p => p.name)
-            ]
-        };
-
-        if (!updatedPreviews[colorIndex]) {
-            updatedPreviews[colorIndex] = [];
-        }
-
-        updatedPreviews[colorIndex] = [
-            ...updatedPreviews[colorIndex],
-            ...newPreviews
-        ];
-
-        setFormData(prev => ({ ...prev, colors: updatedColors }));
-        setImagePreviews(updatedPreviews);
-    };
-
-    const handleRemoveImage = (colorIndex, imageIndex) => {
-        const updatedColors = formData.colors.map((color, idx) =>
-            idx === colorIndex
-                ? { ...color, templateImages: [...color.templateImages.slice(0, imageIndex), ...color.templateImages.slice(imageIndex + 1)] }
-                : color
-        );
-
-        const updatedPreviews = imagePreviews.map((previews, idx) =>
-            idx === colorIndex
-                ? previews.filter((_, i) => i !== imageIndex)
-                : previews
-        );
-
-        // Revoke the object URL if it's a blob
-        if (imagePreviews[colorIndex]?.[imageIndex]?.url?.startsWith('blob:')) {
-            URL.revokeObjectURL(imagePreviews[colorIndex][imageIndex].url);
-        }
-
-        setFormData(prev => ({ ...prev, colors: updatedColors }));
-        setImagePreviews(updatedPreviews);
-    };
-
-
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        // Validate form
         const newErrors = {};
         if (!formData.type) newErrors.type = 'Type is required';
         if (!formData.name) newErrors.name = 'Name is required';
         if (!formData.desc) newErrors.desc = 'Description is required';
-        if (formData.colors.some(c => !c.color || c.templateImages.length === 0)) {
-            newErrors.colors = 'All colors must have a name and at least one image';
-        }
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
@@ -277,58 +200,55 @@ const TemplateForm = () => {
         try {
             const formDataToSend = new FormData();
 
-            // Add all form fields
-            formDataToSend.append('type', formData.type);
             formDataToSend.append('name', formData.name);
+            formDataToSend.append('type', formData.type);
             formDataToSend.append('desc', formData.desc);
-            formData.tags.forEach((tag, tagIndex) => {
-                formDataToSend.append(`tags[${tagIndex}]` , tag);
-            });
             formDataToSend.append('size', formData.size);
             formDataToSend.append('templateType', formData.templateType);
             formDataToSend.append('templateTheme', formData.templateTheme);
             formDataToSend.append('orientation', formData.orientation);
-            formDataToSend.append('count', formData.count);
-            formDataToSend.append('templatePhoto', formData.templatePhoto);
-            formDataToSend.append('isFavorite', formData.isFavorite);
-            formDataToSend.append('isPremium', formData.isPremium);
+            formDataToSend.append('count', formData.count || 0);
+            formDataToSend.append('templatePhoto', formData.templatePhoto || false);
+            formDataToSend.append('isFavorite', formData.isFavorite || false);
+            formDataToSend.append('isPremium', formData.isPremium || false);
 
-            formDataToSend.append('colors', JSON.stringify(formData.colors.map(color => ({
-                color: color.color,
-                hex: color.hex,
-                templateImages: color.templateImages,
-            }))));
+            if (formData.tags && Array.isArray(formData.tags)) {
+                formData.tags.forEach((tag, index) => {
+                    formDataToSend.append(`tags[${index}]`, tag);
+                });
+            }
+
+            if (formData.colors && Array.isArray(formData.colors)) {
+                formData.colors.forEach((color, index) => {
+                    formDataToSend.append(`colors[${index}][color]`, color.color);
+                    formDataToSend.append(`colors[${index}][hex]`, color.hex);
+                    formDataToSend.append(`colors[${index}][initialDetail]`, JSON.stringify(color.initialDetail || {}));
+                });
+            }
 
             imagePreviews.forEach((colorPreviews, colorIndex) => {
-                colorPreviews?.forEach((preview, imgIndex) => {
+                colorPreviews.forEach((preview) => {
                     if (preview.file) {
                         formDataToSend.append(`templateImages[${colorIndex}]`, preview.file);
                     }
                 });
             });
 
-            let response;
-            if (isEditing) {
-                response = await axiosInstance.put(`/api/template/${id}`, formDataToSend, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data'
-                    }
-                });
-            } else {
-                response = await axiosInstance.post('/api/template', formDataToSend, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data'
-                    }
-                });
-            }
+            const config = {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            };
 
-            console.log('Template saved:', response.data);
+            const response = isEditing
+                ? await axiosInstance.put(`/api/template/${id}`, formDataToSend, config)
+                : await axiosInstance.post('/api/template', formDataToSend, config);
+
             navigate("/template");
         } catch (error) {
-            console.error('Error saving template:', error);
+            console.error('Error saving template:', error.response?.data || error.message);
         }
     };
-
 
     useEffect(() => {
         return () => {
@@ -348,9 +268,108 @@ const TemplateForm = () => {
                 <Typography variant="h4" gutterBottom sx={{ mb: 4 }}>
                     {isEditing ? 'Edit Template' : 'Create New Template'}
                 </Typography>
-
                 <form onSubmit={handleSubmit}>
                     <Grid container spacing={3}>
+                        <Grid item xs={12}>
+                            <Typography variant="h6" gutterBottom>
+                                Colors
+                            </Typography>
+                            {errors.colors && (
+                                <Typography color="error" variant="body2" gutterBottom>
+                                    {errors.colors}
+                                </Typography>
+                            )}
+                            {formData.colors.map((color, index) => (
+                                <Paper key={index} sx={{ p: 3, mb: 3, position: 'relative', border: '1px solid #eee' }}>
+                                    <IconButton
+                                        sx={{ position: 'absolute', top: 8, right: 8 }}
+                                        onClick={() => handleRemoveColor(index)}
+                                        color="error"
+                                    >
+                                        <DeleteOutlineIcon />
+                                    </IconButton>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12} md={3.7}>
+                                            <Box
+                                                onClick={() => navigate('/editor')}
+                                                sx={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    width: "100%",
+                                                    padding: "8px",
+                                                    border: "2px dashed #aaa",
+                                                    borderRadius: "8px",
+                                                    cursor: "pointer",
+                                                    transition: "all 0.3s ease-in-out",
+                                                    "&:hover": {
+                                                        borderColor: "#4CAF50",
+                                                        backgroundColor: "rgba(76, 175, 80, 0.1)"
+                                                    }
+                                                }}
+                                            >
+                                                <Typography variant="body1" color="textSecondary">
+                                                    Customize in Editor
+                                                </Typography>
+                                            </Box>
+                                        </Grid>
+                                        <Grid item xs={12} md={3.7}>
+                                            <TextField
+                                                fullWidth
+                                                label="Color Name"
+                                                name="color"
+                                                value={color.color}
+                                                onChange={(e) => handleColorNameChange(index, e)}
+                                                helperText="Type color name (e.g., 'red', 'blue')"
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12} md={3.7}>
+                                            <TextField
+                                                fullWidth
+                                                label="Hex Code"
+                                                name="hex"
+                                                value={color.hex}
+                                                onChange={(e) => handleHexChange(index, e)}
+                                                InputProps={{
+                                                    startAdornment: (
+                                                        <Box
+                                                            sx={{
+                                                                width: 24,
+                                                                height: 24,
+                                                                bgcolor: color.hex,
+                                                                border: '1px solid #ccc',
+                                                                mr: 1,
+                                                                borderRadius: '4px'
+                                                            }}
+                                                        />
+                                                    ),
+                                                }}
+                                                helperText="Enter hex code (e.g.,rgb(255, 0, 0))"
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <Typography variant="subtitle2">Uploaded Images</Typography>
+                                            {templetImage && (
+                                                <Box
+                                                    component="img"
+                                                    src={templetImage}
+                                                    alt="Template Preview"
+                                                    sx={{ width: 120, height: 120, border: '1px solid #ccc' }}
+                                                />
+                                            )}
+                                        </Grid>
+                                    </Grid>
+                                </Paper>
+                            ))}
+                            <Button
+                                variant="outlined"
+                                startIcon={<AddIcon />}
+                                onClick={handleAddColor}
+                                sx={{ mt: 1 }}
+                            >
+                                Add Another Color
+                            </Button>
+                        </Grid>
                         <Grid item xs={12}>
                             <FormControl fullWidth error={!!errors.type}>
                                 <InputLabel>Type</InputLabel>
@@ -528,162 +547,6 @@ const TemplateForm = () => {
                                 }
                                 label="Premium Template"
                             />
-                        </Grid>
-
-                        {/* Colors Section */}
-                        <Grid item xs={12}>
-                            <Typography variant="h6" gutterBottom>
-                                Colors
-                            </Typography>
-                            {errors.colors && (
-                                <Typography color="error" variant="body2" gutterBottom>
-                                    {errors.colors}
-                                </Typography>
-                            )}
-
-                            {formData.colors.map((color, index) => (
-                                <Paper key={index} sx={{ p: 3, mb: 3, position: 'relative', border: '1px solid #eee' }}>
-                                    <IconButton
-                                        sx={{ position: 'absolute', top: 8, right: 8 }}
-                                        onClick={() => handleRemoveColor(index)}
-                                        color="error"
-                                    >
-                                        <DeleteOutlineIcon />
-                                    </IconButton>
-
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={12} md={3.7}>
-                                            <TextField
-                                                fullWidth
-                                                label="Color Name"
-                                                name="color"
-                                                value={color.color}
-                                                onChange={(e) => handleColorNameChange(index, e)}
-                                                helperText="Type color name (e.g., 'red', 'blue')"
-                                            />
-                                        </Grid>
-
-                                        <Grid item xs={12} md={3.7}>
-                                            <TextField
-                                                fullWidth
-                                                label="Hex Code"
-                                                name="hex"
-                                                value={color.hex}
-                                                onChange={(e) => handleHexChange(index, e)}
-                                                InputProps={{
-                                                    startAdornment: (
-                                                        <Box
-                                                            sx={{
-                                                                width: 24,
-                                                                height: 24,
-                                                                bgcolor: color.hex,
-                                                                border: '1px solid #ccc',
-                                                                mr: 1,
-                                                                borderRadius: '4px'
-                                                            }}
-                                                        />
-                                                    ),
-                                                }}
-                                                helperText="Enter hex code (e.g., #FF0000)"
-                                            />
-                                        </Grid>
-
-                                        <Grid item xs={12} md={3.7}>
-                                            <Box
-                                                component="label"
-                                                fullWidth
-                                                sx={{
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "center",
-                                                    width: "100%",
-                                                    padding: "8px",
-                                                    border: "2px dashed #aaa",
-                                                    borderRadius: "8px",
-                                                    cursor: "pointer",
-                                                    transition: "all 0.3s ease-in-out",
-                                                    "&:hover": {
-                                                        borderColor: "#4CAF50",
-                                                        backgroundColor: "rgba(76, 175, 80, 0.1)"
-                                                    }
-                                                }}
-                                            >
-                                                <input
-                                                    type="file"
-                                                    multiple
-                                                    ref={el => fileInputRefs.current[index] = el}
-                                                    onChange={(e) => handleImageUpload(index, e)}
-                                                    style={{ display: "none" }}
-                                                />
-                                                <Typography variant="body1" color="textSecondary">
-                                                    Upload Images
-                                                </Typography>
-                                            </Box>
-                                        </Grid>
-
-                                        {/* Image Previews */}
-                                        <Grid item xs={12}>
-                                            <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                                                Uploaded Images ({color.templateImages.length})
-                                            </Typography>
-                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                                                {(imagePreviews[index] || []).map((preview, imgIndex) => (
-                                                    <Box key={imgIndex} sx={{ position: 'relative' }}>
-                                                        <Avatar
-                                                            variant="rounded"
-                                                            src={preview.url}
-                                                            sx={{
-                                                                width: 120,
-                                                                height: 120,
-                                                                border: '1px solid #ddd',
-                                                                borderRadius: '8px'
-                                                            }}
-                                                        />
-                                                        <IconButton
-                                                            size="small"
-                                                            sx={{
-                                                                position: 'absolute',
-                                                                top: 4,
-                                                                right: 4,
-                                                                backgroundColor: 'rgba(255,255,255,0.7)',
-                                                                '&:hover': {
-                                                                    backgroundColor: 'rgba(255,255,255,0.9)'
-                                                                }
-                                                            }}
-                                                            onClick={() => handleRemoveImage(index, imgIndex)}
-                                                        >
-                                                            <DeleteOutlineIcon fontSize="small" color="error" />
-                                                        </IconButton>
-                                                        <Typography
-                                                            variant="caption"
-                                                            display="block"
-                                                            textAlign="center"
-                                                            sx={{
-                                                                mt: 0.5,
-                                                                maxWidth: '120px',
-                                                                whiteSpace: 'nowrap',
-                                                                overflow: 'hidden',
-                                                                textOverflow: 'ellipsis'
-                                                            }}
-                                                        >
-                                                            {preview.name}
-                                                        </Typography>
-                                                    </Box>
-                                                ))}
-                                            </Box>
-                                        </Grid>
-                                    </Grid>
-                                </Paper>
-                            ))}
-
-                            <Button
-                                variant="outlined"
-                                startIcon={<AddIcon />}
-                                onClick={handleAddColor}
-                                sx={{ mt: 1 }}
-                            >
-                                Add Another Color
-                            </Button>
                         </Grid>
 
                         {/* Submit Button */}
