@@ -125,7 +125,7 @@ const Type = () => {
 
             const data = {
                 name: formData.name,
-                subCategory: selectedSubCategoryId,
+                subCategoryID: selectedSubCategoryId,
             };
 
 

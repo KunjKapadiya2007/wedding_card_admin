@@ -298,7 +298,7 @@ const TemplateForm = () => {
             formDataToSend.append('colors', JSON.stringify(formData.colors.map(color => ({
                 color: color.color,
                 hex: color.hex,
-                templateImages: isEditing ? [] : color.templateImages,
+                templateImages: color.templateImages,
             }))));
 
             imagePreviews.forEach((colorPreviews, colorIndex) => {
