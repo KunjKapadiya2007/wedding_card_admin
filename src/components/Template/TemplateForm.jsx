@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Button, Checkbox, Chip, Container, FormControl, FormControlLabel, FormHelperText, Grid, IconButton, InputLabel, MenuItem, Paper, Select, TextField, Typography } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import React, { useState, useRef, useEffect } from 'react';
+import { Box, Button, Checkbox, FormControl, FormControlLabel, FormHelperText, Grid, InputLabel, MenuItem, Select, TextField, Typography, Paper, Chip, IconButton, Avatar, Container } from '@mui/material';
+import { Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import axiosInstance from "../../Instance.jsx";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEditorData } from '../../pages/editor/EditorDataContext.jsx';
 
+// Color dictionary for auto-completion
 const colorDictionary = {
     'red': '#FF0000',
     'blue': '#0000FF',
@@ -60,7 +61,9 @@ const TemplateForm = () => {
     const [tagInput, setTagInput] = useState('');
     const [imagePreviews, setImagePreviews] = useState([]);
     const [errors, setErrors] = useState({});
+    const fileInputRefs = useRef([]);
     const [types, setTypes] = useState([]);
+    const [dataUrl, setDataUrl] = useState('');
     const { id } = useParams();
     const navigate = useNavigate();
     const [isEditing, setIsEditing] = useState(false);
@@ -432,6 +435,7 @@ const TemplateForm = () => {
                                 {errors.type && <FormHelperText>{errors.type}</FormHelperText>}
                             </FormControl>
                         </Grid>
+
                         <Grid item xs={12} md={6}>
                             <TextField
                                 fullWidth
@@ -443,6 +447,7 @@ const TemplateForm = () => {
                                 helperText={errors.name}
                             />
                         </Grid>
+
                         <Grid item xs={12} md={6}>
                             <TextField
                                 fullWidth
@@ -452,6 +457,7 @@ const TemplateForm = () => {
                                 onChange={handleChange}
                             />
                         </Grid>
+
                         <Grid item xs={12}>
                             <TextField
                                 fullWidth
@@ -465,6 +471,8 @@ const TemplateForm = () => {
                                 helperText={errors.desc}
                             />
                         </Grid>
+
+                        {/* Tags */}
                         <Grid item xs={12}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                                 <TextField
@@ -493,6 +501,8 @@ const TemplateForm = () => {
                                 ))}
                             </Box>
                         </Grid>
+
+                        {/* Template Properties */}
                         <Grid item xs={12} md={4}>
                             <FormControl fullWidth>
                                 <InputLabel>Template Type</InputLabel>
@@ -510,6 +520,7 @@ const TemplateForm = () => {
                                 </Select>
                             </FormControl>
                         </Grid>
+
                         <Grid item xs={12} md={4}>
                             <FormControl fullWidth>
                                 <InputLabel>Template Theme</InputLabel>
@@ -527,6 +538,7 @@ const TemplateForm = () => {
                                 </Select>
                             </FormControl>
                         </Grid>
+
                         <Grid item xs={12} md={4}>
                             <FormControl fullWidth>
                                 <InputLabel>Orientation</InputLabel>
@@ -542,6 +554,8 @@ const TemplateForm = () => {
                                 </Select>
                             </FormControl>
                         </Grid>
+
+                        {/* Checkboxes */}
                         <Grid item xs={12}>
                             <FormControlLabel
                                 control={
@@ -577,6 +591,8 @@ const TemplateForm = () => {
                                 label="Premium Template"
                             />
                         </Grid>
+
+                        {/* Submit Button */}
                         <Grid item xs={12} sx={{ mt: 4 }}>
                             <Button type="submit" variant="contained" size="large" fullWidth sx={{ textTransform: "unset", border: "1px solid black", padding: "6px 24px", fontSize: "16px", fontWeight: "500", borderRadius: "0px", backgroundColor: '#000', color: '#fff', "&:hover": { backgroundColor: '#fff', color: '#000', }, }}>
                                 {isEditing ? 'Update Template' : 'Create Template'}
