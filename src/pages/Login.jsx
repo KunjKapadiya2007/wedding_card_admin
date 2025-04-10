@@ -98,7 +98,7 @@ const Login = () => {
                   marginBottom: 2,
                 }}
               >
-                Log in to BLISS BOUTIQ
+                LOG IN
               </Typography>
             </Box>
             <Box sx={{ marginBottom: 2 }}>
@@ -108,8 +108,7 @@ const Login = () => {
                   marginBottom: 2,
                 }}
               >
-                Login and enjoy member-only benefits and promotions with BLISS
-                BOUTIQ.
+                Login and enjoy member-only benefits and promotions
               </Typography>
               <Typography
                 component="p"
