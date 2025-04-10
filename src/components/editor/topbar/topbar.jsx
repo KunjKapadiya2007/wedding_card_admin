@@ -9,26 +9,34 @@ import MdcCloudSync from '@meronex/icons/mdc/MdcCloudSync';
 import { CloudWarning } from '../cloud-warning';
 import { useNavigate } from 'react-router-dom'; 
 import { useEditorData } from '../../../pages/editor/EditorDataContext';
+import { useSearchParams } from 'react-router-dom';
 
-// ✅ Save Button
+
 const SaveButton = observer(({ store, colorIndex, formData, setFormData }) => {
   const navigate = useNavigate();
-  const { setEditorData,setTempletImage } = useEditorData(); 
+  const { setEditorData,setTempletImage ,editorData} = useEditorData();
+
+  const [searchParams] = useSearchParams();
+const id = searchParams.get('id');
+
+  useEffect(() => {
+    if(editorData){
+      store.loadJSON(editorData)
+    }
+  },[editorData])
+
   const handleSave = async () => {
     try {
       const json = await store.toJSON();
-      const dataUrl = await store.toDataURL(); // Generate image data URL
-      // console.log(dataUrl,'sssssssssss');
+      const dataUrl = await store.toDataURL();
       setTempletImage(dataUrl)
   
-      // console.log('🎨 Saving design JSON:', json);
-      setEditorData(store);
-      navigate('/template-form');
+      setEditorData(store.toJSON());
+      navigate(id ? `/template-form/${id}` : '/template-form');
   
-      // Update formData with editorData and blogUrl
       const updatedColors = [...formData.colors];
       updatedColors[colorIndex].editorData = json;
-      updatedColors[colorIndex].blogUrl = dataUrl; // Save image URL here
+      updatedColors[colorIndex].blogUrl = dataUrl;
 
       setFormData(prev => ({
         ...prev,
@@ -39,7 +47,7 @@ const SaveButton = observer(({ store, colorIndex, formData, setFormData }) => {
     } catch (err) {
       console.error('Save failed:', err);
     }
-  };  
+  };
 
   return (
     <Button 
@@ -52,7 +60,6 @@ const SaveButton = observer(({ store, colorIndex, formData, setFormData }) => {
   );
 });
 
-// ✅ Download Button
 const DownloadButton = observer(({ store }) => {
   const handleDownload = async () => {
     try {
@@ -76,7 +83,6 @@ const DownloadButton = observer(({ store }) => {
   );
 });
 
-// ✅ Styled Containers
 const NavbarContainer = styled('div')`
   white-space: nowrap;
   @media screen and (max-width: 500px) {
@@ -92,7 +98,6 @@ const NavInner = styled('div')`
   }
 `;
 
-// ✅ Project Status Icon
 const Status = observer(({ project }) => {
   const Icon = !project.cloudEnabled
     ? MdcCloudAlert
@@ -129,7 +134,6 @@ const Status = observer(({ project }) => {
   );
 });
 
-// ✅ Main Topbar Component
 const Topbar = observer(({ store, colorIndex, formData, setFormData }) => {
   const navigate = useNavigate();
 

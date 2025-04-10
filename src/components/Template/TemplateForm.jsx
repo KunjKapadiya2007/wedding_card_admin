@@ -67,9 +67,10 @@ const TemplateForm = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [isEditing, setIsEditing] = useState(false);
-    const { editorData, templetImage } = useEditorData();
+    const { editorData, templetImage, setEditorData } = useEditorData();
 
     useEffect(() => {
+        console.log('editorData :', editorData);
 
         axiosInstance.get("/api/all/type")
             .then((response) => {
@@ -88,7 +89,7 @@ const TemplateForm = () => {
                     const updatedColors = template.colors.map(color => ({
                         color: color.color || '',
                         hex: color.hex || '#000000',
-                        templateImages: Array.isArray(color.templateImages) ? color.templateImages : [],
+                        templateImages: Array.isArray(color.templateImages) ? color.templateImages : [color.templateImages],
                         initialDetail: color.initialDetail || {}
                     }));
 
@@ -218,13 +219,15 @@ const TemplateForm = () => {
                 });
             }
 
-            if (formData.colors && Array.isArray(formData.colors)) {
-                formData.colors.forEach((color, index) => {
-                    formDataToSend.append(`colors[${index}][color]`, color.color);
-                    formDataToSend.append(`colors[${index}][hex]`, color.hex);
-                    formDataToSend.append(`colors[${index}][initialDetail]`, JSON.stringify(color.initialDetail || {}));
-                });
-            }
+            formData.colors.forEach((color, index) => {
+                formDataToSend.append(`colors[${index}][color]`, color.color);
+                formDataToSend.append(`colors[${index}][hex]`, color.hex);
+
+                const initialDetailData = (index === formData.colors.length - 1 && editorData)
+                    ? editorData
+                    : color.initialDetail || {};
+                formDataToSend.append(`colors[${index}][initialDetail]`, JSON.stringify(initialDetailData));
+            });
 
             imagePreviews.forEach((colorPreviews, colorIndex) => {
                 colorPreviews.forEach((preview) => {
@@ -233,6 +236,15 @@ const TemplateForm = () => {
                     }
                 });
             });
+
+            if (templetImage) {
+                const response = await fetch(templetImage);
+                const blob = await response.blob();
+                const file = new File([blob], 'templetImage.png', { type: blob.type || 'image/png' });
+
+                const lastIndex = formData.colors.length - 1;
+                formDataToSend.append(`templateImages[${lastIndex}]`, file);
+            }
 
             const config = {
                 headers: {
@@ -291,7 +303,14 @@ const TemplateForm = () => {
                                     <Grid container spacing={2}>
                                         <Grid item xs={12} md={3.7}>
                                             <Box
-                                                onClick={() => navigate('/editor')}
+                                                onClick={() => {
+                                                    if (id) {
+                                                        navigate(`/editor?id=${id}`);
+                                                        setEditorData(JSON.parse(color.initialDetail))
+                                                    } else {
+                                                        navigate('/editor');
+                                                    }
+                                                }}
                                                 sx={{
                                                     display: "flex",
                                                     alignItems: "center",
@@ -332,30 +351,54 @@ const TemplateForm = () => {
                                                 onChange={(e) => handleHexChange(index, e)}
                                                 InputProps={{
                                                     startAdornment: (
-                                                        <Box
-                                                            sx={{
-                                                                width: 24,
-                                                                height: 24,
-                                                                bgcolor: color.hex,
-                                                                border: '1px solid #ccc',
-                                                                mr: 1,
-                                                                borderRadius: '4px'
-                                                            }}
-                                                        />
+                                                        <>
+                                                            <Box
+                                                                component="input"
+                                                                type="color"
+                                                                value={color.hex}
+                                                                onChange={(e) => handleHexChange(index, { target: { value: e.target.value } })}
+                                                                sx={{
+                                                                    width: 24,
+                                                                    height: 24,
+                                                                    border: 'none',
+                                                                    mr: 1,
+                                                                    padding: 0,
+                                                                    background: 'none',
+                                                                    cursor: 'pointer'
+                                                                }}
+                                                            />
+                                                        </>
                                                     ),
                                                 }}
-                                                helperText="Enter hex code (e.g.,rgb(255, 0, 0))"
+                                                helperText="Enter hex code (e.g., #ff0000)"
                                             />
                                         </Grid>
                                         <Grid item xs={12}>
                                             <Typography variant="subtitle2">Uploaded Images</Typography>
-                                            {templetImage && (
-                                                <Box
-                                                    component="img"
-                                                    src={templetImage}
-                                                    alt="Template Preview"
-                                                    sx={{ width: 120, height: 120, border: '1px solid #ccc' }}
-                                                />
+
+                                            {id ? (
+                                                imagePreviews.map((colorPreviews, colorIndex) => (
+                                                    <Box key={colorIndex} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                                        {colorPreviews.map((preview, index) => (
+                                                            <Box
+                                                                key={index}
+                                                                component="img"
+                                                                src={preview.url}
+                                                                alt="Template Preview"
+                                                                sx={{ width: 120, height: 120, border: '1px solid #ccc' }}
+                                                            />
+                                                        ))}
+                                                    </Box>
+                                                ))
+                                            ) : (
+                                                templetImage && (
+                                                    <Box
+                                                        component="img"
+                                                        src={templetImage}
+                                                        alt="Template Preview"
+                                                        sx={{ width: 120, height: 120, border: '1px solid #ccc' }}
+                                                    />
+                                                )
                                             )}
                                         </Grid>
                                     </Grid>
@@ -551,26 +594,7 @@ const TemplateForm = () => {
 
                         {/* Submit Button */}
                         <Grid item xs={12} sx={{ mt: 4 }}>
-                            <Button
-                                type="submit"
-                                variant="contained"
-                                size="large"
-                                fullWidth
-                                sx={{
-                                    textTransform: "unset",
-                                    border: "1px solid black",
-                                    padding: "6px 24px",
-                                    fontSize: "16px",
-                                    fontWeight: "500",
-                                    borderRadius: "0px",
-                                    backgroundColor: '#000',
-                                    color: '#fff',
-                                    "&:hover": {
-                                        backgroundColor: '#fff',
-                                        color: '#000',
-                                    },
-                                }}
-                            >
+                            <Button type="submit" variant="contained" size="large" fullWidth sx={{ textTransform: "unset", border: "1px solid black", padding: "6px 24px", fontSize: "16px", fontWeight: "500", borderRadius: "0px", backgroundColor: '#000', color: '#fff', "&:hover": { backgroundColor: '#fff', color: '#000', }, }}>
                                 {isEditing ? 'Update Template' : 'Create Template'}
                             </Button>
                         </Grid>

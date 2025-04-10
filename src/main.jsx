@@ -13,8 +13,8 @@ const Root = () => {
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        localStorage.removeItem("token"); // 🔥 Logout karne ke liye token remove
-        navigate("/login"); // 🔥 Login page pe redirect
+        localStorage.removeItem("token");
+        navigate("/login");
     };
 
     return (
