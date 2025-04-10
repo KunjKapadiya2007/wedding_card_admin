@@ -12,7 +12,7 @@ import {
     Button,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import logo from "../../../assets/image/logo/logo.svg";
+import logo from "../../../assets/image/logo/logo.png";
 import CloseIcon from "@mui/icons-material/Close";
 import { useNavigate } from "react-router-dom";
 
