@@ -1,6 +1,5 @@
 import React from "react";
 import Header from "./components/global/Header/Header";
-import Home from "./pages/Home/Home";
 import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import AddProduct1 from "./pages/AddProduct1";
 import { Box, CssBaseline, styled } from "@mui/material";
@@ -95,7 +94,7 @@ const App = ({ isLoggedIn, onLogout }) => {
 
                 <Main open={isLoggedIn && open} noPadding={hideHeaderFooter} >
                     <Routes>
-                        <Route path="/" element={<Home />} />
+                        <Route path="/" element={<Template />} />
                         <Route path="/add-product" element={<AddProduct1 />} />
                         <Route path="/edit-product/:productId" element={<AddProduct1 />} />
                         <Route path="/category" element={<CategoryList />} />
