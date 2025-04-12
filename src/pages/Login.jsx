@@ -14,7 +14,7 @@ import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import {useFormik} from "formik";
 import {useNavigate} from "react-router-dom";
 import * as Yup from "yup";
-import {toast} from "react-toastify";
+import {toast, ToastContainer} from "react-toastify";
 import axiosInstance from "../Instance";
 import logo from "../assets/image/logo/logo.png"
 import bgImg from "../assets/image/login/login-background.jpg"
@@ -23,7 +23,7 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
     const handleClickShowPassword = () => setShowPassword(!showPassword);
     const navigate = useNavigate();
-    const notify = () => toast.success("Login successful :tada:");
+    const notify = () => toast.success("Login successful");
     const notifyError = (message) => toast.error(message);
     const formik = useFormik({
         initialValues: {
@@ -43,42 +43,24 @@ const Login = () => {
             axiosInstance
                 .post("/api/auth/login", values)
                 .then((response) => {
-                    console.log(response);
-                    const {token} = response.data;
-                    localStorage.setItem("token", token, {expires: 7});
-                    actions.resetForm();
-                    navigate("/");
-                    notify();
-                })
-                .catch((error) => {
-                    const status = error.response ? error.response.status : 500;
-                    switch (status) {
-                        case 400:
-                            notifyError("Bad request. Please check your input.");
-                            break;
-                        case 401:
-                            notifyError("Unauthorized. Please check your credentials.");
-                            break;
-                        case 403:
-                            notifyError(
-                                "Forbidden. You don't have permission to perform this action."
-                            );
-                            break;
-                        case 404:
-                            notifyError(
-                                "Not found. The requested resource could not be found."
-                            );
-                            break;
-                        case 500:
-                            notifyError("Internal server error. Please try again later.");
-                            break;
-                        default:
-                            notifyError("An unknown error occurred. Please try again.");
-                            break;
+                    console.log(response.data , "logged in")
+                    const { token, user } = response.data;
+                    if (user.role === "ADMIN") {
+                        localStorage.setItem("token", token);
+                        actions.resetForm();
+                        notify();
+                        navigate("/");
+                    } else {
+                        notifyError("Access Denied: Only admin can log in.");
                     }
+                })
+                .catch(() => {
+                    notifyError("Login failed. Please check your credentials.");
                 });
         },
     });
+
+
     return (
         <Box
             sx={{
@@ -91,6 +73,7 @@ const Login = () => {
                 alignItems: "center",
             }}
         >
+            <ToastContainer />
             <Box
                 sx={{
                     position: "absolute",
