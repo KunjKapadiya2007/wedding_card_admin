@@ -43,7 +43,6 @@ const Login = () => {
             axiosInstance
                 .post("/api/auth/login", values)
                 .then((response) => {
-                    console.log(response.data , "logged in")
                     const { token, user } = response.data;
                     if (user.role === "ADMIN") {
                         localStorage.setItem("token", token);
