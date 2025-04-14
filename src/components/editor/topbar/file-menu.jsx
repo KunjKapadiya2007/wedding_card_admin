@@ -216,48 +216,48 @@ export const FileMenu = observer(({ store, project }) => {
           maxWidth: '700px',
         }}
       >
-        <div className={Classes.DIALOG_BODY}>
-          <h2>What is Polotno Studio?</h2>
-          <p>
-            <strong>Polotno Studio</strong> - is a web application to create
-            graphical designs. You can mix image, text and illustrations to make
-            social media posts, youtube previews, podcast covers, business cards
-            and presentations.
-          </p>
-          <h2>Is it Open Source?</h2>
-          <p>
-            Partially. The source code is available in{' '}
-            <a href="https://github.com/lavrton/polotno-studio" target="_blank">
-              GitHub repository
-            </a>
-            . The repository doesn't have full source.{' '}
-            <strong>Polotno Studio</strong> is powered by{' '}
-            <a href="https://polotno.com/" target="_blank">
-              Polotno SDK project
-            </a>
-            . All core "canvas editor" functionality are implemented by{' '}
-            <strong>polotno</strong> npm package (which is not open source at
-            the time of writing this text).
-          </p>
-          <p>
-            Polotno Studio is build on top of Polotno SDK to provide a
-            desktop-app-like experience.
-          </p>
-          <h2>Who is making Polotno Studio?</h2>
-          <p>
-            My name is Anton Lavrenov{' '}
-            <a href="https://twitter.com/lavrton" target="_blank">
-              @lavrton
-            </a>
-            . I am founder of Polotno project. As the maintainer of{' '}
-            <a href="https://konvajs.org/" target="_blank">
-              Konva 2d canvas framework
-            </a>
-            , I created several similar apps for different companies around the
-            world. So I decided to compile all my knowledge and experience into
-            reusable Polotno project.
-          </p>
-        </div>
+        {/*<div className={Classes.DIALOG_BODY}>*/}
+        {/*  <h2>What is Polotno Studio?</h2>*/}
+        {/*  <p>*/}
+        {/*    <strong>Polotno Studio</strong> - is a web application to create*/}
+        {/*    graphical designs. You can mix image, text and illustrations to make*/}
+        {/*    social media posts, youtube previews, podcast covers, business cards*/}
+        {/*    and presentations.*/}
+        {/*  </p>*/}
+        {/*  <h2>Is it Open Source?</h2>*/}
+        {/*  <p>*/}
+        {/*    Partially. The source code is available in{' '}*/}
+        {/*    <a href="https://github.com/lavrton/polotno-studio" target="_blank">*/}
+        {/*      GitHub repository*/}
+        {/*    </a>*/}
+        {/*    . The repository doesn't have full source.{' '}*/}
+        {/*    <strong>Polotno Studio</strong> is powered by{' '}*/}
+        {/*    <a href="https://polotno.com/" target="_blank">*/}
+        {/*      Polotno SDK project*/}
+        {/*    </a>*/}
+        {/*    . All core "canvas editor" functionality are implemented by{' '}*/}
+        {/*    <strong>polotno</strong> npm package (which is not open source at*/}
+        {/*    the time of writing this text).*/}
+        {/*  </p>*/}
+        {/*  <p>*/}
+        {/*    Polotno Studio is build on top of Polotno SDK to provide a*/}
+        {/*    desktop-app-like experience.*/}
+        {/*  </p>*/}
+        {/*  <h2>Who is making Polotno Studio?</h2>*/}
+        {/*  <p>*/}
+        {/*    My name is Anton Lavrenov{' '}*/}
+        {/*    <a href="https://twitter.com/lavrton" target="_blank">*/}
+        {/*      @lavrton*/}
+        {/*    </a>*/}
+        {/*    . I am founder of Polotno project. As the maintainer of{' '}*/}
+        {/*    <a href="https://konvajs.org/" target="_blank">*/}
+        {/*      Konva 2d canvas framework*/}
+        {/*    </a>*/}
+        {/*    , I created several similar apps for different companies around the*/}
+        {/*    world. So I decided to compile all my knowledge and experience into*/}
+        {/*    reusable Polotno project.*/}
+        {/*  </p>*/}
+        {/*</div>*/}
         <div className={Classes.DIALOG_FOOTER}>
           <div className={Classes.DIALOG_FOOTER_ACTIONS}>
             <Button onClick={() => toggleFaq(false)}>Close</Button>
