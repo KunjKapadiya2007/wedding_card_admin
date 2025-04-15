@@ -9,7 +9,7 @@ import React from 'react';
 // most of the text above wrote copilot
 const loadCredits = (key, maxUsage) => {
   try {
-    const data = JSON.parse(localStorage.getItem(key) || '{}');
+    const data = JSON.parse(sessionStorage.getItem(key) || '{}');
     if (data.date !== new Date().toDateString()) {
       return maxUsage;
     }
@@ -19,7 +19,7 @@ const loadCredits = (key, maxUsage) => {
 };
 
 const saveCredits = (key, credits) => {
-  localStorage.setItem(
+  sessionStorage.setItem(
     key,
     JSON.stringify({
       date: new Date().toDateString(),

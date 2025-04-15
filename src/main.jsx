@@ -9,11 +9,11 @@ import PolotnoEditorProvider from "./pages/editor/PolotnoEditorProvider";
 import { FiberProvider } from "its-fine";
 
 const Root = () => {
-    const isLoggedIn = !!localStorage.getItem("token");
+    const isLoggedIn = !!sessionStorage.getItem("token");
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        localStorage.removeItem("token");
+        sessionStorage.removeItem("token");
         navigate("/login");
     };
 

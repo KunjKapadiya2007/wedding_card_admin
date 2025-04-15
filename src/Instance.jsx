@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const token = localStorage.getItem("token");
+const token = sessionStorage.getItem("token");
 
 const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_PUBLIC_BASE_URL,

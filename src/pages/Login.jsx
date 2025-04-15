@@ -45,7 +45,7 @@ const Login = () => {
                 .then((response) => {
                     const { token, user } = response.data;
                     if (user.role === "ADMIN") {
-                        localStorage.setItem("token", token);
+                        sessionStorage.setItem("token", token);
                         actions.resetForm();
                         notify();
                         navigate("/");

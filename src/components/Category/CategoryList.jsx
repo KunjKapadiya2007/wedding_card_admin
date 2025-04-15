@@ -66,7 +66,7 @@ const CategoryList = () => {
 
   const handleSubmit = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       const data = { name: formData.name, parentCategory: formData.parentCategory };
       let response;
 
@@ -105,7 +105,7 @@ const CategoryList = () => {
 
   const handleDelete = async (categoryId, parentCategoryId) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       const response = await axiosInstance.delete(
         `/api/parent-category/${parentCategoryId}/category/${categoryId}`,
         {

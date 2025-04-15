@@ -121,7 +121,7 @@ const Type = () => {
                 return;
             }
 
-            const token = localStorage.getItem("token");
+            const token = sessionStorage.getItem("token");
 
             const data = {
                 name: formData.name,
@@ -191,7 +191,7 @@ const Type = () => {
                 return;
             }
 
-            const token = localStorage.getItem("token");
+            const token = sessionStorage.getItem("token");
 
             const response = await axiosInstance.delete(
                 `/api/parent-category/${parentCategoryId}/category/${selectedCategory}/sub-category/${selectedSubCategoryId}/type/${typeId}`,

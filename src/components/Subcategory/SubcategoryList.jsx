@@ -94,7 +94,7 @@ const SubCategoryList = () => {
                 }
             }
 
-            const token = localStorage.getItem("token");
+            const token = sessionStorage.getItem("token");
             const data = { name: formData.name };
             let response;
 
@@ -129,7 +129,7 @@ const SubCategoryList = () => {
         try {
             if (!window.confirm("Are you sure you want to delete this subcategory?")) return;
 
-            const token = localStorage.getItem("token");
+            const token = sessionStorage.getItem("token");
             const response = await axiosInstance.delete(
                 `/api/parent-category/${parentCategoryId}/category/${categoryId}/sub-category/${subcategoryId}`,
                 { headers: { Authorization: `Bearer ${token}` } }

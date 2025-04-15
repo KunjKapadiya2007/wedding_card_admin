@@ -238,7 +238,7 @@ const Header = ({ open }) => {
                                         }
                                     }}
                                     onClick={() => {
-                                        localStorage.removeItem("token"); // 🔥 Remove token from localStorage
+                                        sessionStorage.removeItem("token"); // 🔥 Remove token from localStorage
                                         navigate("/login", { replace: true }); // 🔥 Redirect to login page
                                     }}
                                 >
