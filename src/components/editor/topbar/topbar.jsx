@@ -12,51 +12,61 @@ import { useEditorData } from '../../../pages/editor/EditorDataContext';
 import { useSearchParams } from 'react-router-dom';
 
 
-const SaveButton = observer(({ store, colorIndex, formData, setFormData }) => {
+const SaveButton = observer(({ store }) => {
   const navigate = useNavigate();
-  const { setEditorData,setTempletImage ,editorData} = useEditorData();
+  const {
+    setEditorData, setTempletImage,
+    currentColorIndex , editorData, formData, setFormData
+  } = useEditorData();
 
   const [searchParams] = useSearchParams();
-const id = searchParams.get('id');
+  const id = searchParams.get('id');
 
   useEffect(() => {
-    if(editorData){
-      store.loadJSON(editorData)
+    if (editorData && id) {
+      store.loadJSON(editorData);
     }
-  },[editorData])
+  }, [editorData]);
+
 
   const handleSave = async () => {
     try {
       const json = await store.toJSON();
       const dataUrl = await store.toDataURL();
-      setTempletImage(dataUrl)
-  
-      setEditorData(store.toJSON());
-      navigate(id ? `/template-form/${id}` : '/template-form');
-  
-      const updatedColors = [...formData.colors];
-      updatedColors[colorIndex].editorData = json;
-      updatedColors[colorIndex].blogUrl = dataUrl;
 
-      setFormData(prev => ({
-        ...prev,
-        colors: updatedColors,
-      }));
-  
-      alert('Design saved and blog URL generated!');
+      setEditorData(json);
+      setTempletImage(dataUrl);
+
+      // Save to the correct color block
+      if (currentColorIndex !== null) {
+        const updatedColors = [...formData.colors];
+        updatedColors[currentColorIndex].initialDetail = json;
+        updatedColors[currentColorIndex].templateImages = dataUrl;
+        setFormData(prev => ({
+          ...prev,
+          colors: updatedColors,
+        }));
+      }
+
+      // Navigate back to edit page with ID (edit mode) or new form
+      const path = id ? `/template-form/${id}` : '/template-form';
+      navigate(path);
+
+      // Optional: Use toast/snackbar instead of alert
+      alert(`Design saved for color index ${currentColorIndex}`);
     } catch (err) {
       console.error('Save failed:', err);
     }
   };
 
   return (
-    <Button 
-      icon={<FloppyDisk />}
-      text="Save"
-      intent="success"
-      onClick={handleSave}
-      style={{ marginRight: '10px' }}
-    />
+      <Button
+          icon={<FloppyDisk />}
+          text="Save"
+          intent="success"
+          onClick={handleSave}
+          style={{ marginRight: '10px' }}
+      />
   );
 });
 
@@ -134,7 +144,7 @@ const Status = observer(({ project }) => {
   );
 });
 
-const Topbar = observer(({ store, colorIndex, formData, setFormData }) => {
+const Topbar = observer(({ store }) => {
   const navigate = useNavigate();
 
   return (
@@ -146,9 +156,6 @@ const Topbar = observer(({ store, colorIndex, formData, setFormData }) => {
         <Navbar.Group align={Alignment.RIGHT}>
           <SaveButton
             store={store}
-            colorIndex={colorIndex}
-            formData={formData}
-            setFormData={setFormData}
           />
         </Navbar.Group>
       </NavInner>

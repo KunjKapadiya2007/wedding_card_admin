@@ -1,76 +1,51 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Box, Button, Checkbox, FormControl, FormControlLabel, FormHelperText, Grid, InputLabel, MenuItem, Select, TextField, Typography, Paper, Chip, IconButton, Avatar, Container } from '@mui/material';
-import { Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
+import React, {useState, useRef, useEffect} from 'react';
+import {
+    Box,
+    Button,
+    Checkbox,
+    FormControl,
+    FormControlLabel,
+    FormHelperText,
+    Grid,
+    InputLabel,
+    MenuItem,
+    Select,
+    TextField,
+    Typography,
+    Paper,
+    Chip,
+    IconButton,
+    Container
+} from '@mui/material';
+import {Delete as DeleteIcon, Add as AddIcon} from '@mui/icons-material';
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import axiosInstance from "../../Instance.jsx";
-import { useNavigate, useParams } from "react-router-dom";
-import { useEditorData } from '../../pages/editor/EditorDataContext.jsx';
-
-// Color dictionary for auto-completion
-const colorDictionary = {
-    'red': '#FF0000',
-    'blue': '#0000FF',
-    'green': '#00FF00',
-    'yellow': '#FFFF00',
-    'black': '#000000',
-    'white': '#FFFFFF',
-    'purple': '#800080',
-    'orange': '#FFA500',
-    'pink': '#FFC0CB',
-    'brown': '#A52A2A',
-    'gray': '#808080',
-    'cyan': '#00FFFF',
-    'magenta': '#FF00FF',
-    'lime': '#00FF00',
-    'maroon': '#800000',
-    'olive': '#808000',
-    'navy': '#000080',
-    'teal': '#008080',
-    'silver': '#C0C0C0',
-    'gold': '#FFD700'
-};
-
-const hexToColorName = Object.fromEntries(
-    Object.entries(colorDictionary).map(([name, hex]) => [hex.toLowerCase(), name])
-);
+import {useNavigate, useParams} from "react-router-dom";
+import {useEditorData} from '../../pages/editor/EditorDataContext.jsx';
 
 const TemplateForm = () => {
-    const [formData, setFormData] = useState({
-        type: '',
-        name: '',
-        desc: '',
-        tags: [],
-        colors: [
-            {
-                color: '',
-                hex: '',
-                templateImages: '',
-                initialDetail: {},
-            },
-        ],
-        size: '',
-        templateType: '',
-        templateTheme: '',
-        orientation: '',
-        count: 0,
-        templatePhoto: false,
-        isFavorite: false,
-        isPremium: false,
-
-    });
     const [tagInput, setTagInput] = useState('');
     const [imagePreviews, setImagePreviews] = useState([]);
     const [errors, setErrors] = useState({});
     const fileInputRefs = useRef([]);
     const [types, setTypes] = useState([]);
     const [dataUrl, setDataUrl] = useState('');
-    const { id } = useParams();
+    const {id} = useParams();
     const navigate = useNavigate();
     const [isEditing, setIsEditing] = useState(false);
-    const { editorData, templetImage, setEditorData } = useEditorData();
+    const {
+        editorData,
+        templetImage,
+        setEditorData,
+        formData,
+        setFormData,
+        setCurrentColorIndex,
+        setTempletImage
+    } = useEditorData();
 
     useEffect(() => {
         console.log('editorData :', editorData);
+        console.log('templetImage :', formData);
 
         axiosInstance.get("/api/all/type")
             .then((response) => {
@@ -88,7 +63,7 @@ const TemplateForm = () => {
 
                     const updatedColors = template.colors.map(color => ({
                         color: color.color || '',
-                        hex: color.hex || '#000000',
+                        hex: color.hex || '',
                         templateImages: Array.isArray(color.templateImages) ? color.templateImages : [color.templateImages],
                         initialDetail: color.initialDetail || {}
                     }));
@@ -106,17 +81,16 @@ const TemplateForm = () => {
                             file: null
                         }));
                     });
-
                     setImagePreviews(previews);
                 })
                 .catch((error) => {
                     console.error("Error fetching template:", error);
                 });
         }
-    }, [id]);
+    }, [id,editorData]);
 
     const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
+        const {name, value, type, checked} = e.target;
         setFormData(prev => ({
             ...prev,
             [name]: type === 'checkbox' ? checked : value
@@ -124,45 +98,37 @@ const TemplateForm = () => {
     };
 
     const handleTypeChange = (event) => {
-        setFormData({ ...formData, type: event.target.value });
+        setFormData({...formData, type: event.target.value});
     };
 
     const handleColorNameChange = (index, e) => {
-        const { value } = e.target;
+        const {value} = e.target;
         const updatedColors = [...formData.colors];
 
         updatedColors[index].color = value;
 
-        if (colorDictionary[value.toLowerCase()]) {
-            updatedColors[index].hex = colorDictionary[value.toLowerCase()];
-        }
-
-        setFormData(prev => ({ ...prev, colors: updatedColors }));
+        setFormData(prev => ({...prev, colors: updatedColors}));
     };
 
     const handleHexChange = (index, e) => {
-        const { value } = e.target;
+        const {value} = e.target;
         const updatedColors = [...formData.colors];
 
         updatedColors[index].hex = value;
 
-        if (hexToColorName[value.toLowerCase()]) {
-            updatedColors[index].color = hexToColorName[value.toLowerCase()];
-        }
-
-        setFormData(prev => ({ ...prev, colors: updatedColors }));
+        setFormData(prev => ({...prev, colors: updatedColors}));
     };
 
     const handleAddColor = () => {
         setFormData(prev => ({
             ...prev,
-            colors: [...prev.colors, { color: '', hex: '#000000', templateImages: [], initialDetail: {} }]
+            colors: [...prev.colors, {color: '', hex: '#000000', templateImages: [], initialDetail: {}}]
         }));
     };
 
     const handleRemoveColor = (index) => {
         const updatedColors = formData.colors.filter((_, i) => i !== index);
-        setFormData(prev => ({ ...prev, colors: updatedColors }));
+        setFormData(prev => ({...prev, colors: updatedColors}));
 
         const updatedPreviews = [...imagePreviews];
         updatedPreviews.splice(index, 1);
@@ -222,6 +188,9 @@ const TemplateForm = () => {
             formData.colors.forEach((color, index) => {
                 formDataToSend.append(`colors[${index}][color]`, color.color);
                 formDataToSend.append(`colors[${index}][hex]`, color.hex);
+                if (color.templateImages[0].includes('cloudinary')) {
+                    formDataToSend.append(`colors[${index}][templateImages]`, color.templateImages[0]);
+                }
 
                 const initialDetailData = (index === formData.colors.length - 1 && editorData)
                     ? editorData
@@ -229,22 +198,25 @@ const TemplateForm = () => {
                 formDataToSend.append(`colors[${index}][initialDetail]`, JSON.stringify(initialDetailData));
             });
 
-            imagePreviews.forEach((colorPreviews, colorIndex) => {
-                colorPreviews.forEach((preview) => {
-                    if (preview.file) {
-                        formDataToSend.append(`templateImages[${colorIndex}]`, preview.file);
+            formData.colors.forEach((colorBlock, colorIndex) => {
+                const base64 = colorBlock.templateImages;
+                if (colorBlock.templateImages.includes('base64')) {
+                    const byteString = atob(base64.split(',')[1]);
+                    const mimeString = base64.split(',')[0].split(':')[1].split(';')[0];
+
+                    const ab = new ArrayBuffer(byteString.length);
+                    const ia = new Uint8Array(ab);
+                    for (let i = 0; i < byteString.length; i++) {
+                        ia[i] = byteString.charCodeAt(i);
                     }
-                });
+
+                    const blob = new Blob([ab], {type: mimeString});
+
+                    const file = new File([blob], `templateImage_${colorBlock.color}.png`, {type: mimeString});
+
+                    formDataToSend.append(`templateImages[${colorIndex}]`, file);
+                }
             });
-
-            if (templetImage) {
-                const response = await fetch(templetImage);
-                const blob = await response.blob();
-                const file = new File([blob], 'templetImage.png', { type: blob.type || 'image/png' });
-
-                const lastIndex = formData.colors.length - 1;
-                formDataToSend.append(`templateImages[${lastIndex}]`, file);
-            }
 
             const config = {
                 headers: {
@@ -277,7 +249,7 @@ const TemplateForm = () => {
     return (
         <Box p={2} mt={5}>
             <Container>
-                <Typography variant="h4" gutterBottom sx={{ mb: 4 }}>
+                <Typography variant="h4" gutterBottom sx={{mb: 4}}>
                     {isEditing ? 'Edit Template' : 'Create New Template'}
                 </Typography>
                 <form onSubmit={handleSubmit}>
@@ -292,23 +264,31 @@ const TemplateForm = () => {
                                 </Typography>
                             )}
                             {formData.colors.map((color, index) => (
-                                <Paper key={index} sx={{ p: 3, mb: 3, position: 'relative', border: '1px solid #eee' }}>
+                                <Paper key={index} sx={{p: 3, mb: 3, position: 'relative', border: '1px solid #eee'}}>
                                     <IconButton
-                                        sx={{ position: 'absolute', top: 8, right: 8 }}
+                                        sx={{position: 'absolute', top: 8, right: 8}}
                                         onClick={() => handleRemoveColor(index)}
                                         color="error"
                                     >
-                                        <DeleteOutlineIcon />
+                                        <DeleteOutlineIcon/>
                                     </IconButton>
                                     <Grid container spacing={2}>
                                         <Grid item xs={12} md={3.7}>
                                             <Box
                                                 onClick={() => {
+                                                    // If `initialDetail` is already an object, don't parse it
+                                                    const detail = typeof color.initialDetail === 'string'
+                                                        ? JSON.parse(color.initialDetail)
+                                                        : color.initialDetail;
+
+                                                    setEditorData(detail || null);
+                                                    setTempletImage(color.templateImages);
+                                                    setCurrentColorIndex(index);
+
                                                     if (id) {
                                                         navigate(`/editor?id=${id}`);
-                                                        setEditorData(JSON.parse(color.initialDetail))
                                                     } else {
-                                                        navigate('/editor');
+                                                        navigate(`/editor`);
                                                     }
                                                 }}
                                                 sx={{
@@ -356,7 +336,7 @@ const TemplateForm = () => {
                                                                 component="input"
                                                                 type="color"
                                                                 value={color.hex}
-                                                                onChange={(e) => handleHexChange(index, { target: { value: e.target.value } })}
+                                                                onChange={(e) => handleHexChange(index, {target: {value: e.target.value}})}
                                                                 sx={{
                                                                     width: 24,
                                                                     height: 24,
@@ -375,40 +355,35 @@ const TemplateForm = () => {
                                         </Grid>
                                         <Grid item xs={12}>
                                             <Typography variant="subtitle2">Uploaded Images</Typography>
-
-                                            {id ? (
-                                                imagePreviews.map((colorPreviews, colorIndex) => (
-                                                    <Box key={colorIndex} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                                        {colorPreviews.map((preview, index) => (
-                                                            <Box
-                                                                key={index}
-                                                                component="img"
-                                                                src={preview.url}
-                                                                alt="Template Preview"
-                                                                sx={{ width: 120, height: 120, border: '1px solid #ccc' }}
-                                                            />
-                                                        ))}
-                                                    </Box>
-                                                ))
-                                            ) : (
-                                                templetImage && (
-                                                    <Box
-                                                        component="img"
-                                                        src={templetImage}
-                                                        alt="Template Preview"
-                                                        sx={{ width: 120, height: 120, border: '1px solid #ccc' }}
-                                                    />
-                                                )
+                                            {/*{id ? (*/}
+                                            {/*        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>*/}
+                                            {/*                <Box*/}
+                                            {/*                    key={index}*/}
+                                            {/*                    component="img"*/}
+                                            {/*                    src={color.templateImages[0]}*/}
+                                            {/*                    alt="Template Preview"*/}
+                                            {/*                    sx={{ width: 120, height: 120, border: '1px solid #ccc' }}*/}
+                                            {/*                />*/}
+                                            {/*        </Box>*/}
+                                            {/*) : (*/}
+                                            {color.templateImages && (
+                                                <Box
+                                                    component="img"
+                                                    src={color.templateImages}
+                                                    alt="Template Preview"
+                                                    sx={{width: 120, height: 120, border: '1px solid #ccc'}}
+                                                />
                                             )}
+                                            {/*)}*/}
                                         </Grid>
                                     </Grid>
                                 </Paper>
                             ))}
                             <Button
                                 variant="outlined"
-                                startIcon={<AddIcon />}
+                                startIcon={<AddIcon/>}
                                 onClick={handleAddColor}
-                                sx={{ mt: 1 }}
+                                sx={{mt: 1}}
                             >
                                 Add Another Color
                             </Button>
@@ -474,7 +449,7 @@ const TemplateForm = () => {
 
                         {/* Tags */}
                         <Grid item xs={12}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
                                 <TextField
                                     label="Add Tag"
                                     value={tagInput}
@@ -485,18 +460,18 @@ const TemplateForm = () => {
                                 <Button
                                     variant="outlined"
                                     onClick={handleAddTag}
-                                    startIcon={<AddIcon />}
+                                    startIcon={<AddIcon/>}
                                 >
                                     Add
                                 </Button>
                             </Box>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                            <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 1}}>
                                 {formData.tags.map(tag => (
                                     <Chip
                                         key={tag}
                                         label={tag}
                                         onDelete={() => handleRemoveTag(tag)}
-                                        sx={{ mb: 1 }}
+                                        sx={{mb: 1}}
                                     />
                                 ))}
                             </Box>
@@ -593,8 +568,18 @@ const TemplateForm = () => {
                         </Grid>
 
                         {/* Submit Button */}
-                        <Grid item xs={12} sx={{ mt: 4 }}>
-                            <Button type="submit" variant="contained" size="large" fullWidth sx={{ textTransform: "unset", border: "1px solid black", padding: "6px 24px", fontSize: "16px", fontWeight: "500", borderRadius: "0px", backgroundColor: '#000', color: '#fff', "&:hover": { backgroundColor: '#fff', color: '#000', }, }}>
+                        <Grid item xs={12} sx={{mt: 4}}>
+                            <Button type="submit" variant="contained" size="large" fullWidth sx={{
+                                textTransform: "unset",
+                                border: "1px solid black",
+                                padding: "6px 24px",
+                                fontSize: "16px",
+                                fontWeight: "500",
+                                borderRadius: "0px",
+                                backgroundColor: '#000',
+                                color: '#fff',
+                                "&:hover": {backgroundColor: '#fff', color: '#000',},
+                            }}>
                                 {isEditing ? 'Update Template' : 'Create Template'}
                             </Button>
                         </Grid>
