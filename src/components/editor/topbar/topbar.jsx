@@ -23,7 +23,7 @@ const SaveButton = observer(({ store }) => {
   const id = searchParams.get('id');
 
   useEffect(() => {
-    if (editorData && id) {
+    if (editorData && Object.keys(editorData).length !== 0  && id) {
       store.loadJSON(editorData);
     }
   }, [editorData]);
@@ -37,7 +37,6 @@ const SaveButton = observer(({ store }) => {
       setEditorData(json);
       setTempletImage(dataUrl);
 
-      // Save to the correct color block
       if (currentColorIndex !== null) {
         const updatedColors = [...formData.colors];
         updatedColors[currentColorIndex].initialDetail = json;

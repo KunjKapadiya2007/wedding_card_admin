@@ -22,6 +22,7 @@ import {
 } from '@mui/material';
 import {AspectRatio, Delete, Edit, PhotoSizeSelectActual, Star, StarBorder} from '@mui/icons-material';
 import {useNavigate} from 'react-router-dom';
+import {useEditorData} from "../../pages/editor/EditorDataContext.jsx";
 
 const Template = () => {
     const [templates, setTemplates] = useState([]);
@@ -31,7 +32,7 @@ const Template = () => {
     const [selectedColors, setSelectedColors] = useState({}); // Track selected color for each template
     const [deleteDialog, setDeleteDialog] = useState({ open: false, templateId: null });
     const navigate = useNavigate();
-
+    const {setFormData, initialValues} = useEditorData();
     useEffect(() => {
         const fetchTemplates = async () => {
             try {
@@ -56,7 +57,7 @@ const Template = () => {
                 setLoading(false);
             }
         };
-
+        setFormData(initialValues)
         fetchTemplates();
     }, []);
 

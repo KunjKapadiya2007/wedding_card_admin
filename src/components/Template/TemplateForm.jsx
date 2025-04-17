@@ -40,13 +40,11 @@ const TemplateForm = () => {
         formData,
         setFormData,
         setCurrentColorIndex,
-        setTempletImage
+        setTempletImage,
+        initialValues
     } = useEditorData();
 
     useEffect(() => {
-        console.log('editorData :', editorData);
-        console.log('templetImage :', formData);
-
         axiosInstance.get("/api/all/type")
             .then((response) => {
                 setTypes(response.data.data);
@@ -55,7 +53,7 @@ const TemplateForm = () => {
                 console.error("Error fetching types:", error);
             });
 
-        if (id) {
+        if (id && !formData._id) {
             setIsEditing(true);
             axiosInstance.get(`/api/template/${id}`)
                 .then((response) => {
@@ -64,7 +62,7 @@ const TemplateForm = () => {
                     const updatedColors = template.colors.map(color => ({
                         color: color.color || '',
                         hex: color.hex || '',
-                        templateImages: Array.isArray(color.templateImages) ? color.templateImages : [color.templateImages],
+                        templateImages: color.templateImages,
                         initialDetail: color.initialDetail || {}
                     }));
 
@@ -87,7 +85,9 @@ const TemplateForm = () => {
                     console.error("Error fetching template:", error);
                 });
         }
-    }, [id,editorData]);
+    }, [id]);
+
+
 
     const handleChange = (e) => {
         const {name, value, type, checked} = e.target;
@@ -184,39 +184,31 @@ const TemplateForm = () => {
                     formDataToSend.append(`tags[${index}]`, tag);
                 });
             }
-
             formData.colors.forEach((color, index) => {
                 formDataToSend.append(`colors[${index}][color]`, color.color);
                 formDataToSend.append(`colors[${index}][hex]`, color.hex);
-                if (color.templateImages[0].includes('cloudinary')) {
-                    formDataToSend.append(`colors[${index}][templateImages]`, color.templateImages[0]);
+                if (color.templateImages.includes('cloudinary')) {
+                    formDataToSend.append(`colors[${index}][templateImages]`, color.templateImages);
                 }
-
+                else  if (color.templateImages.includes('base64')) {
+                    const base64 = color.templateImages;
+                    const byteString = atob(base64.split(',')[1]);
+                    const mimeString = base64.split(',')[0].split(':')[1].split(';')[0];
+                    const ab = new ArrayBuffer(byteString.length);
+                    const ia = new Uint8Array(ab);
+                    for (let i = 0; i < byteString.length; i++) {
+                        ia[i] = byteString.charCodeAt(i);
+                    }
+                    const blob = new Blob([ab], {type: mimeString});
+                    const file = new File([blob], `templateImage_${color.color}.png`, {type: mimeString});
+                    formDataToSend.append(`templateImages[${index}]`, file);
+                }
                 const initialDetailData = (index === formData.colors.length - 1 && editorData)
                     ? editorData
                     : color.initialDetail || {};
                 formDataToSend.append(`colors[${index}][initialDetail]`, JSON.stringify(initialDetailData));
             });
 
-            formData.colors.forEach((colorBlock, colorIndex) => {
-                const base64 = colorBlock.templateImages;
-                if (colorBlock.templateImages.includes('base64')) {
-                    const byteString = atob(base64.split(',')[1]);
-                    const mimeString = base64.split(',')[0].split(':')[1].split(';')[0];
-
-                    const ab = new ArrayBuffer(byteString.length);
-                    const ia = new Uint8Array(ab);
-                    for (let i = 0; i < byteString.length; i++) {
-                        ia[i] = byteString.charCodeAt(i);
-                    }
-
-                    const blob = new Blob([ab], {type: mimeString});
-
-                    const file = new File([blob], `templateImage_${colorBlock.color}.png`, {type: mimeString});
-
-                    formDataToSend.append(`templateImages[${colorIndex}]`, file);
-                }
-            });
 
             const config = {
                 headers: {
@@ -224,10 +216,11 @@ const TemplateForm = () => {
                 }
             };
 
-            const response = isEditing
+            const response = (isEditing || formData._id)
                 ? await axiosInstance.put(`/api/template/${id}`, formDataToSend, config)
                 : await axiosInstance.post('/api/template', formDataToSend, config);
 
+            setFormData(initialValues)
             navigate("/template");
         } catch (error) {
             console.error('Error saving template:', error.response?.data || error.message);
@@ -246,11 +239,13 @@ const TemplateForm = () => {
         };
     }, [imagePreviews]);
 
+    console.log("formData.colors : ",formData)
+
     return (
         <Box p={2} mt={5}>
             <Container>
                 <Typography variant="h4" gutterBottom sx={{mb: 4}}>
-                    {isEditing ? 'Edit Template' : 'Create New Template'}
+                    {(isEditing || formData._id) ? 'Edit Template' : 'Create New Template'}
                 </Typography>
                 <form onSubmit={handleSubmit}>
                     <Grid container spacing={3}>
@@ -263,7 +258,7 @@ const TemplateForm = () => {
                                     {errors.colors}
                                 </Typography>
                             )}
-                            {formData.colors.map((color, index) => (
+                            {formData.colors?.map((color, index) => (
                                 <Paper key={index} sx={{p: 3, mb: 3, position: 'relative', border: '1px solid #eee'}}>
                                     <IconButton
                                         sx={{position: 'absolute', top: 8, right: 8}}
@@ -466,7 +461,7 @@ const TemplateForm = () => {
                                 </Button>
                             </Box>
                             <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 1}}>
-                                {formData.tags.map(tag => (
+                                {formData?.tags?.map(tag => (
                                     <Chip
                                         key={tag}
                                         label={tag}
@@ -580,7 +575,7 @@ const TemplateForm = () => {
                                 color: '#fff',
                                 "&:hover": {backgroundColor: '#fff', color: '#000',},
                             }}>
-                                {isEditing ? 'Update Template' : 'Create Template'}
+                                {(isEditing || formData._id) ? 'Update Template' : 'Create Template'}
                             </Button>
                         </Grid>
                     </Grid>
